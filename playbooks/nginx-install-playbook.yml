@@ -1,0 +1,35 @@
+---
+- name: Instalacion de NGINX en Debian
+  hosts: lb
+  become: true
+
+  tasks:
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Create www directory
+      file:
+        path: /var/www/aits
+        state: directory
+        mode: '0775'
+        owner: ansible
+        group: ansible
+
+    ## TODO: Task for deleting default nginx site
+    # https://graspingtech.com/ansible-nginx-static-site/
+    #
+
+    ## TODO: Copy nginx site.conf
+    #
+    #
+
+    ## TODO: Change last task by a handler
+
+    - name: Start NGINX
+      service:
+        name: nginx
+        state: started

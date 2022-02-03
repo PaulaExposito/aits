@@ -1,0 +1,114 @@
+# ovejas para desplegar un cluster de Hadoop
+# Desplegar previamente MVs router, control y dhcpdns
+#
+# Usage:
+#    ansible-playbook --ask-vault IpDM-ovejas-centos-8.yaml
+#
+---
+- name: Clonando MVs. Ovejas para hadoop
+  hosts: localhost
+  gather_facts: false
+
+# Variables
+# --
+
+# archivo encriptado con ansible-vault que contiene la variable
+# {{ ovirt_password }} con la clave para acceder al IaaS ULL
+
+  vars_files:
+    - alu0101106335ULL.yaml
+
+# Clave SSH para el usuario ansible (usen la que generaron en
+# la MV control
+
+  vars:
+    ssh_keys: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC/JRyXCaB4Ht1C1aqrkjZVRXYHaEw1fm2yTG181+tUS1xoSdTgHO5rc8ESOEkFdIpbCetS5buztEsR4cdS0KDAF+/rjSmwbNCsAw7KxlmqIco9EsP4JZO8giZ5mPMHk9832zn9kQFQT5nw55LTvCzsui1294D/zi26lj3WKud/O1zoquFEX8Sd8Y9XErOR0u80i3SUUbCfwGmMB219d0ydv01o1MZV11sZ9XXncTcBUGF7EMa9L89NYc1aFfeJcWbFzH3mAFjknYKKzRHmKblmueX3iUUmD7W96Ph7SMzuPeoyvgs117dbZAkrYReX67g5MQ1heiBkNGRgLEqhYm7Bj573/xtIYeYMRQQ3Avh6Tv/46wjMp9ihyl2i+jJe7qJ8alm6kj4o1/qKcXbl0QuR+ElKL4y7E6eXC2oE3bIOrkZPT6rBaHbBf7sDYwpcO0pFOwfJE8iKylqdxE3i70TSqYoM13JKNwReOxU5aK3UYOgGbb3AdOKsvwLAUIIo7cs= ansible@ubuntu
+
+# Usuario IaaS (cambiar vblanco por aluxxx...)
+
+    ovirt_login: alu0101106335@ULL
+
+# Nodos a crear (en este caso dos ovejas)
+
+    prefix: AITS
+    nodes:
+      - name: bbdd-2
+#     - name: oveja-2
+
+# Especifiquen aqui el perfil de la red privada
+# que tienen asignada
+
+    node_nics:
+      - name: nic1
+        profile_name: DOCP2P-4008
+
+# Tareas
+# ------
+
+  tasks:
+    - name: Login to IaaS
+      ovirt_auth:
+        url: https://iaas.ull.es/ovirt-engine/api
+        insecure: yes
+        username: "{{ ovirt_login }}"
+        password: "{{ ovirt_password }}"
+        headers:
+          filter: true
+
+    - name: Create a VM
+      ovirt_vm:
+        auth: "{{ ovirt_auth }}"
+        cluster: Cluster-Rojo
+        name: "{{ prefix }}-{{ item.name }}"
+        cpu_cores: 1
+        cpu_sockets: 1
+        memory: 1GiB
+        template: centos-8-sinred-cloudinit
+        nics: "{{ node_nics }}"
+        state: present
+        wait: yes
+      with_items: "{{ nodes }}"
+
+    - name: Update VM via cloud-init
+      ovirt_vm:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ prefix }}-{{ item.name }}"
+        state: running
+        cloud_init_nics:
+          - nic_name: ens3
+            nic_boot_protocol: dhcp
+            nic_on_boot: yes
+        cloud_init:
+          host_name: "{{ item.name }}"
+          user_name: ansible
+
+# Passwd generado con mkpasswd -m SHA-512 alumno2020
+# La clave en claro es: alumno2020
+          root_password: $6$mAp2Neoa$bOVGSo9aVYAbFNWCGMPYKLMdlWTIjJbXzTvwoZfBqNOngYnpaqsSv3Y0pwKo8RrgfMzee9Q7Ii1nOmSSNmwCb/
+
+          authorized_ssh_keys: "{{ ssh_keys }}"
+          custom_script: |
+            write_files:
+              - path: /etc/sudoers.d/ansible
+                permissions: '0644'
+                content: |
+                  ansible ALL=(ALL) NOPASSWD:ALL
+              - path: /tmp/saludos.txt
+                permissions: '0644'
+                content: |
+                  ansible ALL=(ALL) NOPASSWD:ALL
+              - path: /tmp/saludos.txt
+                permissions: '0644'
+                content: |
+                  "Que pasa pisha"
+            runcmd:
+              - sed -i '/AllowUsers/c\AllowUsers adminstic usuario soporteiass ansible' /etc/ssh/sshd_config
+              - systemctl restart sshd
+        wait: yes
+      with_items: "{{ nodes }}"
+
+    - name: Cleanup IaaS auth token
+      ovirt_auth:
+        ovirt_auth: "{{ ovirt_auth }}"
+        state: absent
+

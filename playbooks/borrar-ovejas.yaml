@@ -1,0 +1,38 @@
+---
+- name: Borrando MVs. Ovejas para AITS
+  hosts: localhost
+  gather_facts: false
+
+  vars_files:
+    - alu0101106335ULL.yaml
+
+  vars:
+    ssh_keys: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC/JRyXCaB4Ht1C1aqrkjZVRXYHaEw1fm2yTG181+tUS1xoSdTgHO5rc8ESOEkFdIpbCetS5buztEsR4cdS0KDAF+/rjSmwbNCsAw7KxlmqIco9EsP4JZO8giZ5mPMHk9832zn9kQFQT5nw55LTvCzsui1294D/zi26lj3WKud/O1zoquFEX8Sd8Y9XErOR0u80i3SUUbCfwGmMB219d0ydv01o1MZV11sZ9XXncTcBUGF7EMa9L89NYc1aFfeJcWbFzH3mAFjknYKKzRHmKblmueX3iUUmD7W96Ph7SMzuPeoyvgs117dbZAkrYReX67g5MQ1heiBkNGRgLEqhYm7Bj573/xtIYeYMRQQ3Avh6Tv/46wjMp9ihyl2i+jJe7qJ8alm6kj4o1/qKcXbl0QuR+ElKL4y7E6eXC2oE3bIOrkZPT6rBaHbBf7sDYwpcO0pFOwfJE8iKylqdxE3i70TSqYoM13JKNwReOxU5aK3UYOgGbb3AdOKsvwLAUIIo7cs= ansible@ubuntu
+
+    ovirt_login: alu0101106335@ULL
+    prefix: ID-Profesor
+    nodes:
+      - name: oveja-1
+      - name: oveja-2
+
+  tasks:
+    - name: Login to IaaS
+      ovirt_auth:
+        url: https://iaas.ull.es/ovirt-engine/api
+        insecure: yes
+        username: "{{ ovirt_login }}"
+        password: "{{ ovirt_password }}"
+        headers:
+          filter: true
+
+    - name: Stop and Remove a VM
+      ovirt_vm:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ prefix }}-{{ item.name }}"
+        state: absent
+      with_items: "{{ nodes }}"
+
+    - name: Cleanup IaaS auth token
+      ovirt_auth:
+        ovirt_auth: "{{ ovirt_auth }}"
+        state: absent

@@ -1,0 +1,10 @@
+#################################################
+# DO Community Playbooks: Docker
+#################################################
+---
+- hosts: bbdd
+  become: true
+
+  roles:
+    -  geerlingguy.docker
+    

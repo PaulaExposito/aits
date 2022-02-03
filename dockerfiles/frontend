@@ -1,0 +1,12 @@
+FROM node:15.13.0-alpine
+
+RUN apk --no-cache add git
+COPY package.json .
+RUN npm install
+
+COPY . .
+
+STOPSIGNAL SIGINT
+EXPOSE 8080
+
+CMD ["npm", "run", "start"]

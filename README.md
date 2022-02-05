@@ -20,7 +20,7 @@ NGINX configuration file: [nginx.conf](nginx.conf)
 Uso:
 
 ```
-docker run --name some-nginx -v /home/ansible/prueba:/usr/share/nginx/html -v /home/ansible/nginx-conf/nginx.conf:/etc/nginx/nginx.conf -d -p 8080:80 nginx
+docker run --name lb -v /home/ansible/nginx-conf/nginx.conf:/etc/nginx/nginx.conf -d -p 8080:80 nginx
 ```
 
 ## App frontend
@@ -51,7 +51,7 @@ CMD ["npm", "run", "start"]
 Uso: 
 
 ```
-docker run --rm --name client -p 3000:8080 -it frontend
+docker run --rm --name client -p 3000:8080 -it alu0101106335/realworld-frontend
 ```
 
 
@@ -82,7 +82,7 @@ CMD ["npm", "start"]
 Uso: 
 
 ```
-docker run --name server -e MONGODB_FEATHERS_REALWORLD="mongodb://192.168.0.123:27017" -p 3030:3030 -it backend
+docker run --name server -e MONGODB_FEATHERS_REALWORLD="mongodb://192.168.0.123:27017" -p 3030:3030 -it alu0101106335/realworld-backend
 ```
 
 
@@ -97,7 +97,7 @@ docker pull mongo
 Uso:
 
 ```
-docker run --name bbdd -v /home/ansible/mongo:/etc/mongo -d -p 27017:27017 mongo
+docker run --name bbdd -v /home/ansible/mongo:/data/db -d -p 27017:27017 mongo
 ```
 
 ## Comandos útiles
